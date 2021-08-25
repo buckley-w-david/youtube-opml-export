@@ -5,8 +5,8 @@
 // @description  Adds the option to export subscriptions from YouTube as an OPML file of RSS feeds.
 // @author       Gavin Borg & David Buckley
 // @match        https://www.youtube.com/feed/channels
-// @grant        GM_registerMenuCommand
 // @grant        GM.registerMenuCommand
+// @grant        GM.getValue
 // ==/UserScript==
 
 async function exportSubscriptions() {
@@ -34,13 +34,13 @@ async function exportSubscriptions() {
     }))
   })
     
-  Promise.all(promises).then(channels => {
+  Promise.all(promises).then(async channels => {
     // Build download link and click it
-    var xml = buildXML(channels);
+    var xml = await buildXML(channels);
     var fileType = "text/plain";
     var blob = new Blob([xml], {type: fileType});
     var blobURL = window.URL.createObjectURL(blob);
-    var filename = "youtubeSubscriptions.opml";
+    var filename = await GM.getValue("filename", "youtubeSubscriptions.opml");
     var downloadLink = document.createElement("a");
     downloadLink.setAttribute("href", blobURL);
     downloadLink.setAttribute("download", filename);
@@ -50,7 +50,7 @@ async function exportSubscriptions() {
 }
 
 
-function buildXML(channels) {
+async function buildXML(channels) {
    // Goal structure:
    //  <opml version="1.0">
    //   <head>
@@ -76,8 +76,8 @@ function buildXML(channels) {
 
    var body = xmlDoc.createElement("body");
    var parentOutline = xmlDoc.createElement("outline");
-   parentOutline.setAttribute("text", "YouTube Subscriptions")
-   parentOutline.setAttribute("title", "YouTube Subscriptions")
+   parentOutline.setAttribute("text", await GM.getValue("text", "youtube"))
+   parentOutline.setAttribute("title", await GM.getValue("title", "YouTube Subscriptions"))
 
    for(var j = 0; j < channels.length; j++) {
       var outline = xmlDoc.createElement("outline");
@@ -97,10 +97,4 @@ function buildXML(channels) {
    return s.serializeToString(xmlDoc);
 }
 
-// Support both Greasemonkey and others (Greasemonkey check must come first because it can't handle checking if GM_registerMenuCommand exists without crashing)
-if(GM.registerMenuCommand) {
-    GM.registerMenuCommand("Export YouTube Subscriptions to OPML", exportSubscriptions, "x");
-}
-else {
-    GM_registerMenuCommand("Export YouTube Subscriptions to OPML", exportSubscriptions, "x");
-}
+GM.registerMenuCommand("Export YouTube Subscriptions to OPML", exportSubscriptions, "x");
